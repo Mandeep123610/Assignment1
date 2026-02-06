@@ -4,40 +4,33 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Calculator {
-    private final List<String> values = new ArrayList<>();
+
+    private final List<String> tokens = new ArrayList<>();
     private final List<String> history = new ArrayList<>();
-    private boolean isAdvanceMode = false;
+    private boolean advanceMode = false;
 
     public void push(String value) {
-        values.add(value);
+        tokens.add(value);
     }
 
     public int calculate() {
-        if (values.isEmpty()) return 0;
+        if (tokens.isEmpty()) return 0;
 
-        int result;
-        try {
-            result = Integer.parseInt(values.get(0));
-        } catch (Exception e) {
-            return 0;
-        }
+        int result = parseInt(tokens.get(0));
 
-        for (int i = 1; i < values.size(); i += 2) {
-            if (i + 1 >= values.size()) break;
+        for (int i = 1; i < tokens.size(); i += 2) {
+            if (i + 1 >= tokens.size()) break;
 
-            String op = values.get(i);
-            int operand;
-            try {
-                operand = Integer.parseInt(values.get(i + 1));
-            } catch (Exception e) {
-                operand = 0;
-            }
+            String op = tokens.get(i);
+            int operand = parseInt(tokens.get(i + 1));
 
             switch (op) {
                 case "+": result += operand; break;
                 case "-": result -= operand; break;
                 case "*": result *= operand; break;
-                case "/": if (operand != 0) result /= operand; break;
+                case "/":
+                    if (operand != 0) result /= operand;
+                    break;
             }
         }
 
@@ -45,23 +38,31 @@ public class Calculator {
         return result;
     }
 
+    private int parseInt(String s) {
+        try {
+            return Integer.parseInt(s);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
     private void saveToHistory(int result) {
         StringBuilder sb = new StringBuilder();
-        for (String v : values) sb.append(v).append(" ");
+        for (String t : tokens) sb.append(t).append(" ");
         sb.append("= ").append(result);
         history.add(sb.toString());
     }
 
     public void clear() {
-        values.clear();
+        tokens.clear();
     }
 
     public void toggleMode() {
-        isAdvanceMode = !isAdvanceMode;
+        advanceMode = !advanceMode;
     }
 
     public boolean isAdvanceMode() {
-        return isAdvanceMode;
+        return advanceMode;
     }
 
     public String getHistory() {

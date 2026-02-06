@@ -11,16 +11,18 @@ import androidx.appcompat.app.AppCompatDelegate;
 public class MainActivity extends AppCompatActivity {
 
     private Calculator calculator;
+
     private TextView tvResult, tvHistory;
     private View historyScroll;
     private Button btnAdvanceMode;
 
-    private String currentDisplay = "0";
+    private String displayText = "0";     // what user sees
+    private String currentNumber = "";    // builds multi-digit numbers like 20, 105
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        // ✅ stop “dim/invisible” issue in dark mode
+        // Prevent dim UI in dark mode
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
 
         super.onCreate(savedInstanceState);
@@ -50,48 +52,79 @@ public class MainActivity extends AppCompatActivity {
                 R.id.btn5, R.id.btn6, R.id.btn7, R.id.btn8, R.id.btn9
         };
 
-        View.OnClickListener l = v -> {
-            String number = ((Button) v).getText().toString();
-            calculator.push(number);
-            updateDisplay(number);
+        View.OnClickListener listener = v -> {
+            String digit = ((Button) v).getText().toString();
+
+            // Build current number (multi-digit)
+            currentNumber += digit;
+
+            // Update display: if it was "0", replace it
+            if (displayText.equals("0")) displayText = digit;
+            else displayText += digit;
+
+            tvResult.setText(displayText);
         };
 
-        for (int id : ids) findViewById(id).setOnClickListener(l);
+        for (int id : ids) {
+            findViewById(id).setOnClickListener(listener);
+        }
     }
 
     private void setupOperatorButtons() {
         int[] ids = {R.id.btnPlus, R.id.btnMinus, R.id.btnMultiply, R.id.btnDivide};
 
-        View.OnClickListener l = v -> {
+        View.OnClickListener listener = v -> {
             String op = ((Button) v).getText().toString();
+
+            //  push the number typed so far
+            if (!currentNumber.isEmpty()) {
+                calculator.push(currentNumber);
+                currentNumber = "";
+            } else {
+                // If user presses operator first, ignore
+                if (displayText.equals("0")) return;
+            }
+
+            //  push operator
             calculator.push(op);
-            updateDisplay(op);
+
+            // Update display with spaces around operator
+            displayText += " " + op + " ";
+            tvResult.setText(displayText);
         };
 
-        for (int id : ids) findViewById(id).setOnClickListener(l);
+        for (int id : ids) {
+            findViewById(id).setOnClickListener(listener);
+        }
     }
 
     private void setupClearButton() {
         findViewById(R.id.btnClear).setOnClickListener(v -> {
             calculator.clear();
-            currentDisplay = "0";
-            tvResult.setText(currentDisplay);
+            displayText = "0";
+            currentNumber = "";
+            tvResult.setText(displayText);
         });
     }
 
     private void setupEqualsButton() {
         findViewById(R.id.btnEquals).setOnClickListener(v -> {
 
-            // ✅ Save expression before calculate
-            String expression = currentDisplay;
+            //  push last number before calculating
+            if (!currentNumber.isEmpty()) {
+                calculator.push(currentNumber);
+                currentNumber = "";
+            }
 
+            // If nothing valid to calculate, do nothing
+            if (displayText.equals("0")) return;
+
+            String expression = displayText.trim();
             int result = calculator.calculate();
 
-            // ✅ Show full equation on screen
-            currentDisplay = expression + " = " + result;
-            tvResult.setText(currentDisplay);
+            displayText = expression + " = " + result;
+            tvResult.setText(displayText);
 
-            // ✅ Show history only in advance mode (but history is always saved)
             if (calculator.isAdvanceMode()) {
                 historyScroll.setVisibility(View.VISIBLE);
                 tvHistory.setText(calculator.getHistory());
@@ -114,12 +147,5 @@ public class MainActivity extends AppCompatActivity {
                 historyScroll.setVisibility(View.GONE);
             }
         });
-    }
-
-    private void updateDisplay(String value) {
-        if (currentDisplay.equals("0")) currentDisplay = value;
-        else currentDisplay += " " + value;
-
-        tvResult.setText(currentDisplay);
     }
 }
